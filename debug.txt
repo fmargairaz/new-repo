@@ -1,0 +1,20 @@
+KNOWN BUGS AND IMPORTANT CHANGES 
+--------------------------------
+
+x solved: pressure solver and boundary conditions
+
+x solved: MPI won't start (problem with the creation of the bottom layer groupe)
+x done: add top layer communicator
+x transpose_y_to_z from the library is not working because the top and bottom layer are coming from the ghost cell
+
+x at wall we have to assume that dz(tzz)=0.0. (imposed using ghost cell below domain) Any better ideas?
+x stress module and divergence of the stress is debugged without using mpi
+
+- check decomp_2d_fft_2d with/without ghost cell (the arrays are passed as undefined sizes)
+
+x dealiasing scheme with 2decomp library? (check with Biran)
+
+- random number generator for noise on the initial conditon
+
+x 2Decomp library is not working with intel MPI (library works in some cases)
+- 2Decomp library is still unstable the way it is used in the code (do some check, one of the array containing the sizes must have some bogus values, creating an instability (segfault) in the code). 

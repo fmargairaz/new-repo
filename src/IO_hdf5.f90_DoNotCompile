@@ -1,0 +1,127 @@
+module mod_IO_HDF5
+
+  use parameters_IO
+
+  use decomp_2d
+  use physical_system
+  use futils
+  
+  implicit none
+  include 'mpif.h'
+    
+  character(len=80) :: file,snap_file
+  integer :: fid_snap
+
+  integer, save, dimension(2) :: dims
+
+
+  private
+  public :: create_files, close_files, add_snap_data
+
+contains
+
+  subroutine create_files(decomp)
+    
+    implicit none
+    TYPE(DECOMP_INFO),intent(in) :: decomp
+        
+    logical, dimension(2) :: dummy_periods
+    integer, dimension(2) :: dummy_coords
+    integer :: status, errorcode, ierror
+
+    integer :: ierr, me, nproc
+
+    call mpi_comm_size(MPI_COMM_WORLD, nproc, ierr)
+    call mpi_comm_rank(MPI_COMM_WORLD, me, ierr)
+    call MPI_CART_GET(DECOMP_2D_COMM_CART_X, 2, dims, dummy_periods, dummy_coords, ierror) 
+
+    snap_file = out_path(1:len_trim(out_path))//'test_snap.h5'
+    call creatf(snap_file, fid_snap, 'test_output', mpicomm=DECOMP_2D_COMM_CART_X, real_prec='d', mpiposix=.true.)
+    call create_snap_file(me,decomp)
+
+    if(me==0)then
+       write(*,*) '============================================================'
+       write(*,*) 'Snapshots file: '//snap_file(1:len_trim(snap_file))
+       write(*,*) '============================================================'
+    endif
+
+  end subroutine create_files
+
+  subroutine close_files
+    
+    call closef(fid_snap)
+
+  end subroutine close_files
+
+  !************* snapshots file *******************
+
+  subroutine create_snap_file(me,decomp)
+    integer, intent(in) :: me
+    TYPE(DECOMP_INFO),intent(in) :: decomp
+    integer :: rank, dim(7)
+
+    call creatg(fid_snap,'/scalars','Time evolusion for Scalars')
+    call creatg(fid_snap,'/geometry','Coordinate systems')
+    call creatg(fid_snap,'/field','Time evolution for field variables') 
+    call creatg(fid_snap,'/field/1d','1d') 
+    call creatg(fid_snap,'/field/3d','3d')
+
+    rank = 0
+    call creatd(fid_snap, rank, dim, '/scalars/time', 'Normalized Time')
+
+    rank = 3
+    dim(1) = decomp%xsz(1)
+    dim(2) = decomp%xsz(2)
+    dim(3) = decomp%xsz(3)
+    !call creatd(fid_snap, rank, dim, '/field/3d/u', 'velocity')
+
+    call add_coordinates(me,decomp)
+
+  end subroutine create_snap_file
+    
+  subroutine add_coordinates(me,decomp)
+    integer, intent(in) :: me
+    TYPE(DECOMP_INFO),intent(in) :: decomp
+
+    real(rprec),dimension(nx) :: coord_x
+    real(rprec),dimension(ny) :: coord_y
+    real(rprec),dimension(nz) :: coord_z
+    integer :: i,offset
+    
+    offset = -1
+
+    !build coords
+    do i=1,nx
+       coord_x(i)=(i-1)*dx
+    enddo
+    call putarr(fid_snap,'/geometry/coord_x',coord_x,'x grid')
+    
+    do i=1,ny
+       coord_y(i)=(i-1)*dy
+    enddo
+    call putarr(fid_snap,'/geometry/coord_y',coord_y, 'y grid')
+    
+    do i=1,nz
+       coord_z(i)=(i+offset-1)*dz
+    enddo
+    call putarr(fid_snap,'/geometry/coord_z',coord_z, 'z grid')
+        
+  end subroutine add_coordinates
+
+  subroutine add_snap_data(t,step)
+    integer, intent(in) :: step
+    double precision, intent(in) :: t
+    character(len=80) :: name
+
+    !write(*,'(A,F6.2)') ' Snapshot at t = ',
+
+    call append(fid_snap,'/scalars/time',t,ionode=0)
+
+    !call append(fid_snap,'/field/3d/u',u)
+    
+    write(name,'(A,I10.10)') '/field/3d/u_',step
+    call putarrnd(fid_snap,name,u,(/2,3/))
+
+  end subroutine add_snap_data
+
+end module mod_IO_HDF5

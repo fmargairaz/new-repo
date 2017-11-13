@@ -1,0 +1,33 @@
+FEATURE TO BE ADDED
+-------------------
+
+#Physics
+x add wall physics
+x add wall model with filtered velocities
+x add SGS: constant Smagorinsky
+- add scalar: tempetaure
+- add scalar: humidity
+- add SGS: Lagrangian scale dependent dynamic model
+
+#Numerics
+x boundary condition for stress
+x boundary condition u,v,w
+x initial condition log layer
+x add noise on initial condition
+x add sponge  
+x add MKE and tke budget computation
+- add test filter module
+
+#Computer functonality
+x add u_star, ic_type and other IC&BC parameters to namelist IO
+x add checkpoint and secure checkpont files (with option in parameter.nlst)
+x change parameter IO to be read by each node (typ with a parameter.txt file in the same folder as the exec)
+x add relaunch capability (with modification of the nlst file, as in GENE)
+- add better files system (if possible HDF5)
+x add bottom layer group communicator
+x add top layer group communicator
+x add 2D layer group communicator
+x add utiliy module
+x add planar averages in the utility module
+x implement the transposition in Z-pencil for the pressure solver
+- add run summary routine to running diagnostics module

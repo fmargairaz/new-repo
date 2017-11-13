@@ -1,0 +1,115 @@
+module mod_IO_VTK
+
+  use parameters_IO
+  use physical_system
+  use decomp_2d
+  use lib_vtk_io
+
+  implicit none
+  
+  private
+
+  public :: vtk_out
+
+contains
+    
+  
+  !!--------------------------------------------------------------------------------
+  !!  object: subroutine vtk_out()
+  !!--------------------------------------------------------------------------------
+  !!
+  !!  last checked/modified: marco giometto ( mgiometto@gmail.com ), day 02/09/2013
+  !!
+  !!  description:
+  !!
+  !!--------------------------------------------------------------------------------
+  subroutine vtk_out(step,nrank,decomp)
+    
+    implicit none
+    
+    integer,intent(in) :: step,nrank
+    TYPE(DECOMP_INFO),intent(in) :: decomp
+
+    character(256) :: filename
+    logical,save :: init=.true.
+    integer :: e_io
+    real(rprec),dimension(decomp%xst(1):decomp%xen(1)) :: coord_x
+    real(rprec),dimension(decomp%xst(2):decomp%xen(2)) :: coord_y
+    real(rprec),dimension(decomp%xst(3):decomp%xen(3)) :: coord_z
+    integer :: i
+    
+    
+    !build coords
+    do i=decomp%xst(1),decomp%xen(1)
+       coord_x(i)=(i-1)*dx
+    enddo
+    do i=decomp%xst(2),decomp%xen(2)
+       coord_y(i)=(i-1)*dy
+    enddo
+    do i=decomp%xst(3),decomp%xen(3)
+       coord_z(i)=(i-1)*dz
+    enddo
+    
+    !write results
+    write(filename,'(A,I3.3,A,I6.6)') trim(out_path)//'paraview_rank_',nrank,'_',step
+
+    e_io = vtk_ini_xml('binary',trim(filename)//'.vtr','RectilinearGrid',&
+         decomp%xst(1),decomp%xen(1),decomp%xst(2),decomp%xen(2),decomp%xst(3),decomp%xen(3))
+    
+    write(*,*) 'me',nrank,'1st e_io',e_io
+    
+    e_io = vtk_geo_xml(decomp%xst(1),decomp%xen(1),decomp%xst(2),decomp%xen(2),&
+         decomp%xst(3),decomp%xen(3),coord_x,coord_y,coord_z)
+
+    write(*,*) 'me',nrank,'2nd e_io',e_io
+
+    e_io = vtk_var_xml(decomp%xsz(1)*decomp%xsz(2)*decomp%xsz(3),'u',rshp(u,decomp%xsz(1),decomp%xsz(2),decomp%xsz(3),0))
+    
+    write(*,*) 'me',nrank,'3rd e_io',e_io
+    
+    e_io = vtk_dat_xml('node','close')
+    e_io = vtk_geo_xml()
+    e_io = vtk_end_xml()
+    
+    
+  end subroutine vtk_out
+  
+  
+  !function to create 1d vectors from 3d matrices
+  function rshp(v_tmp,nx_n,ny_n,nz_n,intp)
+    implicit none
+    
+    integer,intent(in) :: nx_n,ny_n,nz_n
+    real,dimension(nx_n*ny_n*nz_n) :: rshp
+    real(rprec),dimension(nx_n,ny_n,nz_n),intent(in) :: v_tmp
+    integer,intent(in) :: intp
+    integer :: i,j,k,ii
+    
+    !build var 1d
+    ii=1
+    if(intp.eq.1)then
+       do k=1,nz_n
+          do j=1,ny_n
+             do i=1,nx_n
+                rshp(ii)=real(0.5_rprec*(v_tmp(i,j,k)+v_tmp(i,j,k-1)))
+                ii=ii+1
+             enddo
+          enddo
+       enddo
+    elseif(intp.eq.0)then
+       do k=1,nz_n
+          do j=1,ny_n
+             do i=1,nx_n
+                rshp(ii)=real(v_tmp(i,j,k))
+                ii=ii+1
+             enddo
+          enddo
+       enddo
+    else
+       print*,'please provide either 1 or 0 for interpolation'
+       stop
+    endif
+    
+  end function rshp
+  
+end module mod_IO_VTK

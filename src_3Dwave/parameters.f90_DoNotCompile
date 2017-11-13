@@ -1,0 +1,46 @@
+module param
+
+  implicit none
+
+  integer,parameter :: rprec=kind(1.d0)
+
+  integer,parameter :: p_row=2,p_col=1
+
+  integer,parameter :: nx=128,ny=128,nz=129,nt=2000
+  integer,parameter :: lhx=nx/2+1,lhy=ny/2+1,ldx=2*lhx,ldy=2*lhy
+
+  real(rprec),parameter :: lx=1.0_rprec,ly=1.0_rprec,lz=1.0_rprec 
+  real(rprec),parameter :: dx=lx/nx,dy=ly/ny,dz=lz/(nz-1),dt=0.0001
+  real(rprec),parameter :: pi=3.1415926535897932384626433_rprec
+  real(rprec),parameter :: a=1.0
+
+  logical,parameter :: output = .true.
+  integer,parameter :: step_out=10
+  character(256),parameter :: out_path='/scratch/giometto/fmargairaz/'
+  
+contains
+
+  !!-----------------------------------------------------------------------------------
+  !!  object: subroutine timing(var1,var2,var_out)
+  !!-----------------------------------------------------------------------------------
+  !!
+  !!  last checked/modified: marco giometto ( mgiometto@gmail.com ) on 5/11/2011
+  !!
+  !!  description:
+  !!
+  !!
+  !!-----------------------------------------------------------------------------------
+  subroutine timing(var1,var2,var_out)
+
+    implicit none
+
+    integer,dimension(8),intent(in) :: var1,var2
+    integer,intent(out) :: var_out
+
+    var_out=(var1(8)-var2(8))+(var1(7)-var2(7))*1000+(var1(6)-var2(6))*60*1000
+
+  end subroutine timing
+
+
+end module param
+
